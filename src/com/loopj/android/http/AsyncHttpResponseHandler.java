@@ -76,13 +76,33 @@ public class AsyncHttpResponseHandler {
     protected static final int FINISH_MESSAGE = 3;
 
     private Handler handler;
-
+    
+    private String charset = "UTF-8";
+    
     /**
      * Creates a new AsyncHttpResponseHandler
      */
     public AsyncHttpResponseHandler() {
         // Set up a handler to post events back to the correct thread if possible
         if(Looper.myLooper() != null) {
+            handler = new Handler(){
+                @Override
+                public void handleMessage(Message msg){
+                    AsyncHttpResponseHandler.this.handleMessage(msg);
+                }
+            };
+        }
+    }
+    
+    /**
+     * Creates a new AsyncHttpResponseHandler specifing a charset
+     * @param charset
+     */
+    public AsyncHttpResponseHandler(String charset){
+    	
+    	this.charset = charset;
+    	
+    	if(Looper.myLooper() != null) {
             handler = new Handler(){
                 @Override
                 public void handleMessage(Message msg){
@@ -242,7 +262,7 @@ public class AsyncHttpResponseHandler {
             HttpEntity temp = response.getEntity();
             if(temp != null) {
                 entity = new BufferedHttpEntity(temp);
-                responseBody = EntityUtils.toString(entity, "UTF-8");
+                responseBody = EntityUtils.toString(entity, charset);
             }
         } catch(IOException e) {
             sendFailureMessage(e, (String) null);
