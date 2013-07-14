@@ -18,6 +18,7 @@
 
 package com.loopj.android.http;
 
+import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -29,10 +30,6 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.util.EntityUtils;
-
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
 
 /**
  * Used to intercept and handle the responses from requests made using 
@@ -69,11 +66,13 @@ import android.os.Message;
  * });
  * </pre>
  */
+@SuppressLint("HandlerLeak")
 public class AsyncHttpResponseHandler {
     protected static final int SUCCESS_MESSAGE = 0;
     protected static final int FAILURE_MESSAGE = 1;
     protected static final int START_MESSAGE = 2;
     protected static final int FINISH_MESSAGE = 3;
+    protected static final int PROGRESS_MESSAGE = 4;
 
     private Handler handler;
     
@@ -82,7 +81,7 @@ public class AsyncHttpResponseHandler {
     /**
      * Creates a new AsyncHttpResponseHandler
      */
-    public AsyncHttpResponseHandler() {
+	public AsyncHttpResponseHandler() {
         // Set up a handler to post events back to the correct thread if possible
         if(Looper.myLooper() != null) {
             handler = new Handler(){
@@ -100,16 +99,9 @@ public class AsyncHttpResponseHandler {
      */
     public AsyncHttpResponseHandler(String charset){
     	
+    	this();  	
     	this.charset = charset;
-    	
-    	if(Looper.myLooper() != null) {
-            handler = new Handler(){
-                @Override
-                public void handleMessage(Message msg){
-                    AsyncHttpResponseHandler.this.handleMessage(msg);
-                }
-            };
-        }
+  
     }
 
 
@@ -171,13 +163,16 @@ public class AsyncHttpResponseHandler {
         onFailure(error);
     }
 
+    public void onProgress(int position, int length){
+    	
+    }
 
     //
     // Pre-processing of messages (executes in background threadpool thread)
     //
 
     protected void sendSuccessMessage(int statusCode, Header[] headers, String responseBody) {
-        sendMessage(obtainMessage(SUCCESS_MESSAGE, new Object[]{new Integer(statusCode), headers, responseBody}));
+        sendMessage(obtainMessage(SUCCESS_MESSAGE, new Object[]{Integer.valueOf(statusCode), headers, responseBody}));
     }
 
     protected void sendFailureMessage(Throwable e, String responseBody) {
@@ -196,6 +191,9 @@ public class AsyncHttpResponseHandler {
         sendMessage(obtainMessage(FINISH_MESSAGE, null));
     }
 
+    protected void sendProgressMessage(int position, int length){
+    	sendMessage(obtainMessage(PROGRESS_MESSAGE, new Object[]{position, length}));
+    }
 
     //
     // Pre-processing of messages (in original calling thread, typically the UI thread)
@@ -230,6 +228,10 @@ public class AsyncHttpResponseHandler {
             case FINISH_MESSAGE:
                 onFinish();
                 break;
+            case PROGRESS_MESSAGE:
+            	response = (Object[]) msg.obj;
+            	onProgress(((Integer)response[0]).intValue(), ((Integer)response[1]).intValue());
+            	break;
         }
     }
 
