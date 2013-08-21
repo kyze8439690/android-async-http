@@ -40,7 +40,7 @@ import org.apache.http.message.BasicHeader;
 class SimpleMultipartEntity implements HttpEntity {
     private final static char[] MULTIPART_CHARS = "-_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 
-    private final static int CHUNKSIZE = 65536;
+    private final static int CHUNKSIZE = 1024;
     
     private String boundary = null;
     
